@@ -24,11 +24,11 @@ const handleLogin = async (e: React.FormEvent) => {
 
     try {
       // Connect to Backend
-      const response = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: rollNo, password: password }),
-      });
+const response = await fetch("/api/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ uid: rollNo, password: password }),
+});
 
       const result = await response.json();
 

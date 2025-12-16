@@ -6,35 +6,21 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['logo.png', 'student.png'], // Ensure your images are cached
-      manifest: {
-        name: 'Loyola Student Portal',
-        short_name: 'Loyola ERP',
-        description: 'Modern Student ERP for Loyola Academy',
-        theme_color: '#09090b', // Dark background color
-        background_color: '#09090b',
-        display: 'standalone', // Hides browser address bar
-        orientation: 'portrait',
-        icons: [
-          {
-            src: '/logo.png', // We'll use your existing logo for now
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/logo.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      }
-    })
+    VitePWA({ /* ... keep your existing pwa config ... */ })
   ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // ADD THIS BLOCK:
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

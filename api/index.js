@@ -7,8 +7,8 @@ const { CookieJar } = require('tough-cookie');
 const qs = require('qs');
 
 const app = express();
-const PORT = 5000;
 
+// Helper to handle serverless environment
 app.use(cors());
 app.use(express.json());
 
@@ -25,6 +25,11 @@ const URLS = {
     FEE_PAID: `${BASE_URL}/students/report/studentFinanceDetails.jsp`
 };
 
+// Route is now just /login because the folder structure /api/ handles the prefix
+// However, Express Router needs to match the Vercel path. 
+// Standard Vercel wrapper maps "api/index.js" to "/api".
+// We will catch ALL requests to /api/login here.
+
 app.post('/api/login', async (req, res) => {
     const { uid, password } = req.body;
     if (!uid || !password) return res.status(400).json({ success: false, message: 'Missing Credentials' });
@@ -33,7 +38,6 @@ app.post('/api/login', async (req, res) => {
     const client = wrapper(axios.create({ jar }));
 
     try {
-        // --- LOGIN ---
         console.log(`[AUTH] Logging in ${uid}...`);
         const loginPayload = qs.stringify({
             txtAN: uid, txtSK: password, txtPageAction: '1', _tries: '1', _md5: '',
@@ -48,7 +52,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid Credentials' });
         }
 
-        console.log('[AUTH] Success. Scraping ALL 8 modules...');
+        console.log('[AUTH] Success. Scraping ALL modules...');
 
         const [hourly, profile, subjects, att, internal, exam, due, paid] = await Promise.all([
             client.get(URLS.HOURLY),
@@ -61,10 +65,7 @@ app.post('/api/login', async (req, res) => {
             client.get(URLS.FEE_PAID)
         ]);
 
-        // --- PARSERS ---
-        // (Keeping existing parsers 1-6 the same, appending 7 & 8)
-        
-        // 1. Hourly Stats
+        // --- 1. Hourly ---
         const $h = cheerio.load(hourly.data);
         const hourlyData = {
             summary: {
@@ -84,7 +85,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 2. Profile
+        // --- 2. Profile ---
         const $p = cheerio.load(profile.data);
         const profileData = {};
         $p('table.maintable tr').each((i, row) => {
@@ -100,7 +101,7 @@ app.post('/api/login', async (req, res) => {
             else if(key.includes('residential')) profileData.address = val;
         });
 
-        // 3. Subjects
+        // --- 3. Subjects ---
         const $s = cheerio.load(subjects.data);
         const subjectsData = [];
         $s('#tblStudentWiseSubjects tr').each((i, row) => {
@@ -118,7 +119,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 4. Attendance
+        // --- 4. Attendance ---
         const $a = cheerio.load(att.data);
         const attendanceData = [];
         $a('#tblSubjectWiseAttendance tr').each((i, row) => {
@@ -136,7 +137,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 5. Internal Marks
+        // --- 5. Internals ---
         const $i = cheerio.load(internal.data);
         const internalData = [];
         $i('table tr').each((i, row) => {
@@ -154,7 +155,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 6. Exam Results
+        // --- 6. Exams ---
         const $e = cheerio.load(exam.data);
         const examData = [];
         $e('table tr').each((i, row) => {
@@ -177,13 +178,11 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 7. FEE DUE DETAILS
+        // --- 7. Fee Due ---
         const $due = cheerio.load(due.data);
         const dueData = { list: [], totalDue: 0 };
-        // Trying to find the table inside Fee Due
         $due('table tr').each((i, row) => {
             const cols = $due(row).find('td');
-            // Columns: Fee Type, Fee Head, Due Date, Due Amount
             if (cols.length >= 4) {
                 const type = $due(cols[0]).text().trim();
                 const amountText = $due(cols[3]).text().trim();
@@ -198,14 +197,13 @@ app.post('/api/login', async (req, res) => {
         });
         dueData.totalDue = dueData.list.reduce((acc, curr) => acc + curr.amount, 0);
 
-        // 8. FEE PAID (HISTORY)
+        // --- 8. Fee Paid ---
         const $paid = cheerio.load(paid.data);
         const paidData = { history: [], totalPaid: 0 };
         $paid('table tr').each((i, row) => {
             const cols = $paid(row).find('td');
             if(cols.length >= 4) {
                 const date = $paid(cols[0]).text().trim();
-                // Filter actual rows vs header
                 if (date.match(/\d{2}\/\d{2}\/\d{4}/)) {
                     const amtStr = $paid(cols[3]).text().trim();
                     paidData.history.push({
@@ -234,4 +232,5 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
+// Vercel Serverless Function Export
+module.exports = app;
