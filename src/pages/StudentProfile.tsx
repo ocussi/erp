@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,37 +19,61 @@ import { Label } from "@/components/ui/label";
 import { RefreshCw, Settings, Save, Lock, Mail, Phone, MapPin } from "lucide-react";
 
 export default function StudentProfile() {
+  // Default State
   const [student, setStudent] = useState({
-    name: "GUDLA REVANTH ROSHAN GOUD",
-    regNo: "111724013034",
-    course: "B.Sc.-Computer Science and Engineering [U.G.]",
-    sem: "2025-2026 / III SEMESTER / A",
-    institution: "LOYOLA ACADEMY DEGREE & PG COLLEGE",
-    dob: "29-May-2007",
-    gender: "Male",
-    aadhaar: "997243834263",
-    father: "GUDLA SRINIVAS GOUD / GUDLA ARUN JYOTHI GOUD",
-    address: "7 8 82 GOUTHAM NAGAR MEDCHAL MALKAJGIRI HYDERABAD-500011",
-    contact: "8686866463",
-    email: "personallyrevanth@gmail.com",
-    parentContact: "8686866463 / arunjyothigoud8@gmail.com",
-    admitted: "08-Jun-2024",
-    community: "BC - B",
-    nationality: "INDIAN / HINDU",
+    name: "Loading...",
+    regNo: "",
+    course: "",
+    sem: "",
+    institution: "",
+    dob: "",
+    gender: "",
+    aadhaar: "", 
+    father: "",
+    address: "",
+    contact: "",
+    email: "", 
+    parentContact: "",
+    admitted: "", 
+    community: "",
+    nationality: "",
     hosteller: "No",
-    income: "400000",
-    state: "HYDERABAD / TELANGANA"
+    income: "",
+    state: ""
   });
 
   const [editForm, setEditForm] = useState(student);
   const [loading, setLoading] = useState(false);
+
+  // --- HYDRATION FIX: Use useEffect correctly ---
+  useEffect(() => {
+      const savedData = localStorage.getItem("erp-data-profile");
+      if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setStudent(prev => ({
+              ...prev,
+              name: parsed.name || prev.name,
+              regNo: parsed.regNo || prev.regNo,
+              course: parsed.course || prev.course,
+              sem: parsed.sem || prev.sem,
+              institution: parsed.institution || prev.institution,
+              father: parsed.father || prev.father,
+              address: parsed.address || prev.address,
+              // Simple parsing for merged fields if they exist
+              contact: parsed.contact ? parsed.contact.split('/')[0].trim() : prev.contact,
+              email: parsed.contact && parsed.contact.includes('/') ? parsed.contact.split('/')[1].trim() : prev.email
+          }));
+          
+          // Update edit form to match
+          setEditForm(prev => ({ ...prev, ...parsed }));
+      }
+  }, []);
 
   const handleSave = () => {
       setLoading(true);
       setTimeout(() => {
           setStudent(editForm);
           setLoading(false);
-          // Normally close sheet here, handled by wrapper trigger in real apps
       }, 1000);
   };
 
@@ -64,7 +88,6 @@ export default function StudentProfile() {
               <CardDescription>View your basic academic and personal records.</CardDescription>
           </div>
           
-          {/* Settings Trigger */}
           <Sheet>
             <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
@@ -74,9 +97,7 @@ export default function StudentProfile() {
             <SheetContent className="w-[400px] sm:w-[540px]">
                 <SheetHeader>
                     <SheetTitle>Profile Settings</SheetTitle>
-                    <SheetDescription>
-                        Make changes to your contact information or account security here.
-                    </SheetDescription>
+                    <SheetDescription>Make changes to your contact information or account security here.</SheetDescription>
                 </SheetHeader>
                 
                 <Tabs defaultValue="profile" className="w-full mt-6">
@@ -85,66 +106,41 @@ export default function StudentProfile() {
                         <TabsTrigger value="security">Security</TabsTrigger>
                     </TabsList>
                     
-                    {/* Tab: Edit Details */}
                     <TabsContent value="profile" className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="contact">Mobile Number</Label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    id="contact" 
-                                    className="pl-9"
-                                    value={editForm.contact}
-                                    onChange={(e) => setEditForm({...editForm, contact: e.target.value})} 
-                                />
-                            </div>
+                            <Input 
+                                id="contact" 
+                                value={editForm.contact}
+                                onChange={(e) => setEditForm({...editForm, contact: e.target.value})} 
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    id="email" 
-                                    className="pl-9"
-                                    value={editForm.email}
-                                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                                />
-                            </div>
+                            <Input 
+                                id="email" 
+                                value={editForm.email}
+                                onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="address">Residential Address</Label>
-                             <div className="relative">
-                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <textarea 
-                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pl-9"
-                                    id="address"
-                                    value={editForm.address}
-                                    onChange={(e) => setEditForm({...editForm, address: e.target.value})}
-                                />
-                             </div>
+                            <Input 
+                                id="address"
+                                value={editForm.address}
+                                onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                            />
                         </div>
                     </TabsContent>
                     
-                    {/* Tab: Change Password */}
                     <TabsContent value="security" className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Current Password</Label>
-                            <Input type="password" placeholder="••••••••" />
+                            <Input type="password" />
                         </div>
-                        <Separator />
                         <div className="space-y-2">
                             <Label>New Password</Label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input type="password" className="pl-9" />
-                            </div>
-                        </div>
-                         <div className="space-y-2">
-                            <Label>Confirm New Password</Label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input type="password" className="pl-9" />
-                            </div>
+                            <Input type="password" />
                         </div>
                     </TabsContent>
                 </Tabs>
@@ -159,7 +155,6 @@ export default function StudentProfile() {
 
         </CardHeader>
         <CardContent className="pt-6 grid gap-6">
-          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DetailItem label="Full Name" value={student.name} full />
             <DetailItem label="Register No." value={student.regNo} />
@@ -167,33 +162,15 @@ export default function StudentProfile() {
             <DetailItem label="Academic Year" value={student.sem} />
             <DetailItem label="Institution" value={student.institution} full />
           </div>
-
           <Separator />
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <DetailItem label="Date of Birth / Gender" value={`${student.dob} / ${student.gender}`} />
-             <DetailItem label="Aadhaar Number" value={student.aadhaar} />
-             <DetailItem label="Father/Mother Name" value={student.father} full />
+             <DetailItem label="Father Name" value={student.father} full />
              <DetailItem label="Residential Address" value={student.address} full />
-             <DetailItem label="Student Contact" value={`${student.contact} / ${student.email}`} full />
-             <DetailItem label="Parent Contact" value={student.parentContact} full />
+             <DetailItem label="Contact Details" value={`${student.contact} / ${student.email}`} full />
           </div>
-
-          <Separator />
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <DetailItem label="Admitted Date" value={student.admitted} />
-            <DetailItem label="Community" value={student.community} />
-            <DetailItem label="Religion/Nat." value={student.nationality} />
-            <DetailItem label="Hosteller" value={student.hosteller} />
-            <DetailItem label="Income" value={`Rs. ${student.income}`} />
-            <DetailItem label="Region" value={student.state} />
-          </div>
-
         </CardContent>
       </Card>
-
-      {/* Profile Photo & Status Card */}
+ {/* Profile Photo & Status Card */}
       <div className="space-y-6">
         <Card className="shadow-sm overflow-hidden border-2 border-primary/5">
             <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-8 flex justify-center items-center relative">
@@ -236,10 +213,9 @@ export default function StudentProfile() {
     </div>
   );
 }
-
 const DetailItem = ({ label, value, full }: { label: string, value: string, full?: boolean }) => (
   <div className={full ? "col-span-1 sm:col-span-2" : "col-span-1"}>
     <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-bold mb-1">{label}</h4>
-    <p className="text-sm font-medium text-foreground leading-relaxed break-words">{value}</p>
+    <p className="text-sm font-medium text-foreground break-words">{value || "—"}</p>
   </div>
 );

@@ -14,25 +14,47 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+
+  // Inside src/pages/Login.tsx
+
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Simulate API network delay
-    setTimeout(() => {
-      // Mock validation
-      if (rollNo && password) {
+    try {
+      // Connect to Backend
+      const response = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: rollNo, password: password }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
         localStorage.setItem("erp-auth", "true");
-        // Dispatch custom event to notify App.tsx (optional, but router helps)
+        localStorage.setItem("erp-user", JSON.stringify({ uid: rollNo }));
+
+        // --- SAVE ALL 6 SNAPSHOTS ---
+        localStorage.setItem("erp-data-profile", JSON.stringify(result.data.profile));
+        localStorage.setItem("erp-data-hourly", JSON.stringify(result.data.hourly));
+        localStorage.setItem("erp-data-subjects", JSON.stringify(result.data.subjects));
+        localStorage.setItem("erp-data-attendance", JSON.stringify(result.data.attendance));
+        localStorage.setItem("erp-data-internals", JSON.stringify(result.data.internals));
+        localStorage.setItem("erp-data-exams", JSON.stringify(result.data.exams));
+        localStorage.setItem("erp-data-fees", JSON.stringify(result.data.fees));
+
         navigate("/");
       } else {
-        setError("Invalid credentials. Please try again.");
+        setError(result.message || "Invalid credentials.");
       }
+    } catch (err) {
+      setError("Connection refused. Ensure backend is running.");
+    } finally {
       setIsLoading(false);
-    }, 1500);
-  };
-
+    }
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950 p-4 relative overflow-hidden">
       
@@ -83,7 +105,7 @@ export default function Login() {
             <Button type="submit" className="w-full h-10 transition-all" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Fetching Live Data...
                 </>
               ) : (
                 "Sign In"
@@ -93,10 +115,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="flex flex-col gap-2 text-center text-xs text-muted-foreground">
           <p>
-            Forgot your password?{" "}
-            <span className="text-primary hover:underline cursor-pointer">
-              Reset via Email
-            </span>
+            Secure connection established with college ERP.
           </p>
           <p>© 2025 Loyola Academy. Powered by Shadcn ERP.</p>
         </CardFooter>

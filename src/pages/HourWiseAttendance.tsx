@@ -1,4 +1,3 @@
-import * as React from "react"
 import { 
     Card, 
     CardContent, 
@@ -9,14 +8,13 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Info, HelpCircle, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarDays, Info, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- Chart Imports ---
@@ -28,40 +26,25 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 
-const RAW_LOGS = [
-    { date: "12-Dec-2025", hours: ["P", "", "", "", ""] },
-    { date: "11-Dec-2025", hours: ["P", "", "P", "P", "P"] },
-    { date: "10-Dec-2025", hours: ["A", "A", "", "A", "A"] },
-    { date: "09-Dec-2025", hours: ["P", "P", "P", "A", "P"] },
-    { date: "08-Dec-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "05-Dec-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "04-Dec-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "03-Dec-2025", hours: ["P", "P", "P", "A", "A"] },
-    { date: "02-Dec-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "01-Dec-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "29-Nov-2025", hours: ["", "", "A", "A", "A"] },
-    { date: "28-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "27-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "26-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "25-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "24-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "22-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "21-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "20-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "19-Nov-2025", hours: ["P", "P", "", "P", "P"] },
-    { date: "18-Nov-2025", hours: ["P", "P", "P", "P", "P"] },
-    { date: "17-Nov-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "15-Nov-2025", hours: ["A", "A", "A", "A", "A"] },
-    { date: "14-Nov-2025", hours: ["A", "A", "A", "A", "A"] },
+// Fallback Mock data
+const MOCK_LOGS = [
+    { date: "No Data", hours: [null, null, null, null, null] },
 ];
 
 export default function HourWiseAttendance() {
     
-    // Logic Stats
-    const totalWorkingDays = 24;
-    const hoursPresent = 61;
-    const hoursAbsent = 50;
-    const percentage = Math.round((hoursPresent / (hoursPresent + hoursAbsent)) * 100);
+    // --- KEY FIX: LOAD 'erp-data-hourly', NOT 'attendance' ---
+    const storedData = localStorage.getItem("erp-data-hourly");
+    const parsedData = storedData ? JSON.parse(storedData) : null;
+
+    // Use Safe Chaining (?.) to prevent crashes
+    const summary = parsedData?.summary || { workingDays: 0, present: 0, absent: 0, percentage: 0 };
+    const logs = parsedData?.logs || MOCK_LOGS;
+
+    const totalWorkingDays = summary.workingDays;
+    const hoursPresent = summary.present;
+    const hoursAbsent = summary.absent;
+    const percentage = summary.percentage; // Fixed percentage number
 
     // -- CHART CONFIG --
     const chartData = [
@@ -73,16 +56,15 @@ export default function HourWiseAttendance() {
       hours: { label: "Hours" },
       present: {
         label: "Present",
-        color: "#86EFAC", // <--- UPDATED GREEN
+        color: "#86EFAC", 
       },
       absent: {
         label: "Absent",
-        color: "#FCA5A5", // <--- UPDATED RED
+        color: "#FCA5A5", 
       },
     } satisfies ChartConfig
 
-    // -- Styles Helper --
-    const getStatusStyle = (status: string) => {
+    const getStatusStyle = (status: string | null) => {
         switch (status) {
             case "P": return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
             case "A": return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
@@ -112,7 +94,9 @@ export default function HourWiseAttendance() {
                         <CalendarDays className="w-5 h-5 text-primary" />
                         <div>
                             <CardTitle className="text-base font-semibold">Hourly Logs</CardTitle>
-                            <CardDescription className="text-xs">Day-to-day session tracking</CardDescription>
+                            <CardDescription className="text-xs">
+                                {logs === MOCK_LOGS ? "Sample Data" : "Live Session Tracking"}
+                            </CardDescription>
                         </div>
                     </div>
                     
@@ -156,24 +140,25 @@ export default function HourWiseAttendance() {
 
                 <ScrollArea className="flex-1 bg-card">
                     <div className="p-4 space-y-2">
-                        {RAW_LOGS.map((log, i) => (
+                        {logs.map((log: any, i: number) => (
                             <div 
                                 key={i} 
                                 className="flex items-center p-2 rounded-lg border bg-background/50 hover:bg-muted/30 transition-all text-sm group"
                             >
                                 <div className="w-24 flex-shrink-0 font-medium text-xs font-mono text-muted-foreground">
-                                    {log.date.slice(0, 6)}
+                                    {log.date}
                                 </div>
                                 <div className="grid grid-cols-5 gap-2 flex-1">
-                                    {log.hours.map((status, index) => (
+                                    {/* Handle potentially fewer than 5 hours with checks */}
+                                    {[0,1,2,3,4].map((hIndex) => (
                                         <div 
-                                            key={index} 
+                                            key={hIndex} 
                                             className={cn(
                                                 "h-8 flex items-center justify-center rounded border font-bold text-xs shadow-sm",
-                                                getStatusStyle(status)
+                                                getStatusStyle(log.hours ? log.hours[hIndex] : null)
                                             )}
                                         >
-                                            {status || "•"}
+                                            {log.hours && log.hours[hIndex] ? log.hours[hIndex] : "•"}
                                         </div>
                                     ))}
                                 </div>
@@ -183,20 +168,18 @@ export default function HourWiseAttendance() {
                 </ScrollArea>
             </Card>
 
-
-            {/* RIGHT COLUMN: Stacked View */}
+            {/* RIGHT COLUMN */}
             <div className="flex flex-col gap-6 h-auto lg:h-full order-1 lg:order-2">
                 
-                {/* Stats Summary */}
                 <Card className="flex-1 shadow-sm flex flex-col justify-between max-h-[200px]">
                     <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                             <div>
                                 <CardTitle className="text-lg">Overview</CardTitle>
-                                <CardDescription>Academic Period Stats</CardDescription>
+                                <CardDescription>Live from ERP</CardDescription>
                             </div>
-                            <Badge variant={percentage < 75 ? "destructive" : "default"} className="ml-auto">
-                                {percentage}% Average
+                            <Badge variant={Number(percentage) < 75 ? "destructive" : "default"} className="ml-auto">
+                                {Number(percentage).toFixed(2)}% Average
                             </Badge>
                         </div>
                     </CardHeader>
@@ -207,14 +190,14 @@ export default function HourWiseAttendance() {
                          </div>
                          <div className="flex flex-col text-right lg:text-left">
                              <span className="text-muted-foreground text-xs uppercase font-medium">Status</span>
-                             <span className={cn("text-2xl font-bold tracking-tight", percentage < 75 ? "text-red-500" : "text-green-500")}>
-                                 {percentage < 75 ? "Verge of Detention" : "Safe"}
+                             <span className={cn("text-2xl font-bold tracking-tight", Number(percentage) < 75 ? "text-red-500" : "text-green-500")}>
+                                 {Number(percentage) < 75 ? "Detained" : "Safe"}
                              </span>
                          </div>
                     </CardContent>
                 </Card>
 
-                {/* THE DONUT CHART */}
+                {/* Donut Chart */}
                 <Card className="flex-1 flex flex-col shadow-sm min-h-0 h-[300px] lg:h-auto">
                     <CardHeader className="items-center pb-0">
                         <CardTitle className="text-sm font-medium uppercase text-muted-foreground tracking-wider">Attendance Distribution</CardTitle>
@@ -252,7 +235,7 @@ export default function HourWiseAttendance() {
                                           y={viewBox.cy}
                                           className="fill-foreground text-3xl font-bold"
                                         >
-                                          {percentage}%
+                                          {Number(percentage).toFixed(1)}%
                                         </tspan>
                                         <tspan
                                           x={viewBox.cx}
@@ -273,12 +256,10 @@ export default function HourWiseAttendance() {
                     <CardFooter className="flex-col gap-2 text-sm pt-4">
                         <div className="flex w-full items-center justify-center gap-4 text-xs font-medium">
                             <div className="flex items-center gap-1.5">
-                                {/* Manually applying the new green color to legend dot */}
                                 <span className="h-2.5 w-2.5 rounded-full bg-[#86EFAC]" />
                                 <span>Present ({hoursPresent}h)</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                {/* Manually applying the new red color to legend dot */}
                                 <span className="h-2.5 w-2.5 rounded-full bg-[#FCA5A5]" />
                                 <span>Absent ({hoursAbsent}h)</span>
                             </div>
