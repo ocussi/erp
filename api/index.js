@@ -7,8 +7,8 @@ const { CookieJar } = require('tough-cookie');
 const qs = require('qs');
 
 const app = express();
+const PORT = 5000;
 
-// Helper to handle serverless environment
 app.use(cors());
 app.use(express.json());
 
@@ -25,13 +25,17 @@ const URLS = {
     FEE_PAID: `${BASE_URL}/students/report/studentFinanceDetails.jsp`
 };
 
-// Route is now just /login because the folder structure /api/ handles the prefix
-// However, Express Router needs to match the Vercel path. 
-// Standard Vercel wrapper maps "api/index.js" to "/api".
-// We will catch ALL requests to /api/login here.
+// --- HEALTH CHECK ROUTE ---
+// Go to your-app.vercel.app/api/hello to verify backend is running
+app.get('/api/hello', (req, res) => {
+    res.json({ status: "ok", message: "Vercel API is functioning" });
+});
 
 app.post('/api/login', async (req, res) => {
     const { uid, password } = req.body;
+    // ... (Keep your exact Login scraping logic here, NO changes needed to logic) ...
+    // COPY PASTE THE LOGIC FROM THE PREVIOUS MESSAGE INSIDE THIS BLOCK
+    // START COPY
     if (!uid || !password) return res.status(400).json({ success: false, message: 'Missing Credentials' });
 
     const jar = new CookieJar();
@@ -65,7 +69,7 @@ app.post('/api/login', async (req, res) => {
             client.get(URLS.FEE_PAID)
         ]);
 
-        // --- 1. Hourly ---
+        // 1. Hourly Stats
         const $h = cheerio.load(hourly.data);
         const hourlyData = {
             summary: {
@@ -85,7 +89,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // --- 2. Profile ---
+        // 2. Profile
         const $p = cheerio.load(profile.data);
         const profileData = {};
         $p('table.maintable tr').each((i, row) => {
@@ -101,7 +105,7 @@ app.post('/api/login', async (req, res) => {
             else if(key.includes('residential')) profileData.address = val;
         });
 
-        // --- 3. Subjects ---
+        // 3. Subjects
         const $s = cheerio.load(subjects.data);
         const subjectsData = [];
         $s('#tblStudentWiseSubjects tr').each((i, row) => {
@@ -119,7 +123,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // --- 4. Attendance ---
+        // 4. Attendance
         const $a = cheerio.load(att.data);
         const attendanceData = [];
         $a('#tblSubjectWiseAttendance tr').each((i, row) => {
@@ -137,7 +141,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // --- 5. Internals ---
+        // 5. Internals
         const $i = cheerio.load(internal.data);
         const internalData = [];
         $i('table tr').each((i, row) => {
@@ -155,7 +159,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // --- 6. Exams ---
+        // 6. Exams
         const $e = cheerio.load(exam.data);
         const examData = [];
         $e('table tr').each((i, row) => {
@@ -178,7 +182,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // --- 7. Fee Due ---
+        // 7. Fee Due
         const $due = cheerio.load(due.data);
         const dueData = { list: [], totalDue: 0 };
         $due('table tr').each((i, row) => {
@@ -197,12 +201,12 @@ app.post('/api/login', async (req, res) => {
         });
         dueData.totalDue = dueData.list.reduce((acc, curr) => acc + curr.amount, 0);
 
-        // --- 8. Fee Paid ---
+        // 8. Fee Paid
         const $paid = cheerio.load(paid.data);
         const paidData = { history: [], totalPaid: 0 };
         $paid('table tr').each((i, row) => {
             const cols = $paid(row).find('td');
-            if(cols.length >= 4) {
+            if (cols.length >= 4) {
                 const date = $paid(cols[0]).text().trim();
                 if (date.match(/\d{2}\/\d{2}\/\d{4}/)) {
                     const amtStr = $paid(cols[3]).text().trim();
@@ -230,7 +234,12 @@ app.post('/api/login', async (req, res) => {
         console.error(e);
         res.status(500).json({ success: false });
     }
+    // END COPY
 });
 
-// Vercel Serverless Function Export
+// Vercel Serverless Function Handling
+if (require.main === module) {
+    app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
+}
+
 module.exports = app;
