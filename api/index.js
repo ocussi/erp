@@ -11,7 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Base URLs
 const BASE_URL = 'http://202.160.160.58:8080/lastudentportal';
 const URLS = {
     LOGIN: `${BASE_URL}/students/loginManager/youLogin.jsp`,
@@ -25,21 +24,28 @@ const URLS = {
     FEE_PAID: `${BASE_URL}/students/report/studentFinanceDetails.jsp`
 };
 
-// Health Check
 app.get('/api/hello', (req, res) => {
-    res.json({ status: "ok", message: "Vercel API is functioning via ESM" });
+    res.json({ status: "ok", message: "Backend is reachable" });
 });
 
-// Main Login Route
 app.post('/api/login', async (req, res) => {
     const { uid, password } = req.body;
     if (!uid || !password) return res.status(400).json({ success: false, message: 'Missing Credentials' });
 
     const jar = new CookieJar();
-    const client = wrapper(axios.create({ jar }));
+    // 1. TIMEOUT SETTING: Set to 9s to fail gracefully before Vercel kills us at 10s
+    const client = wrapper(axios.create({ 
+        jar,
+        timeout: 9000, 
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+    }));
 
     try {
         console.log(`[AUTH] Logging in ${uid}...`);
+        
+        // --- 1. LOGIN ---
         const loginPayload = qs.stringify({
             txtAN: uid, txtSK: password, txtPageAction: '1', _tries: '1', _md5: '',
             login: 'iamalsouser', passwd: 'haveaniceday', _save: 'Log In'
@@ -49,25 +55,42 @@ app.post('/api/login', async (req, res) => {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
-        if (loginResp.request.res.responseUrl.includes('youLogin.jsp')) {
-            return res.status(401).json({ success: false, message: 'Invalid Credentials' });
+        // Redirect check logic
+        if (loginResp.request.res && loginResp.request.res.responseUrl && loginResp.request.res.responseUrl.includes('youLogin.jsp')) {
+            return res.status(401).json({ success: false, message: 'Invalid Credentials (Redirect Check)' });
+        }
+        
+        // Double check using cheerio title if URL didn't update (sometimes happens in node)
+        const $login = cheerio.load(loginResp.data);
+        if ($login('input[name="txtSK"]').length > 0) {
+             return res.status(401).json({ success: false, message: 'Invalid Credentials' });
         }
 
-        console.log('[AUTH] Success. Scraping ALL modules...');
+        console.log('[AUTH] Success. Scraping modules...');
 
-        // Parallel Request
+        // --- 2. SELECTIVE PARALLEL SCRAPING ---
+        // Vercel Free tier has 10s limit. Fetching 7 pages + Login might hit that if the college server is slow.
+        // We catch errors per-request so one failure doesn't crash the whole login.
+        
+        const fetchSafe = async (url) => {
+            try { return await client.get(url); } catch (e) { return { data: '' }; }
+        };
+
         const [hourly, profile, subjects, att, internal, exam, due, paid] = await Promise.all([
-            client.get(URLS.HOURLY),
-            client.get(URLS.PROFILE),
-            client.get(URLS.SUBJECTS),
-            client.get(URLS.ATTENDANCE),
-            client.get(URLS.INTERNALS),
-            client.get(URLS.EXAMS),
-            client.get(URLS.FEE_DUE),
-            client.get(URLS.FEE_PAID)
+            fetchSafe(URLS.HOURLY),
+            fetchSafe(URLS.PROFILE),
+            fetchSafe(URLS.SUBJECTS),
+            fetchSafe(URLS.ATTENDANCE),
+            fetchSafe(URLS.INTERNALS),
+            fetchSafe(URLS.EXAMS),
+            fetchSafe(URLS.FEE_DUE),
+            fetchSafe(URLS.FEE_PAID)
         ]);
 
-        // 1. Hourly
+        // --- PARSING ---
+        // (Copy parsing logic exactly as before, assuming empty strings if request failed)
+        
+        // 1. Hourly Stats
         const $h = cheerio.load(hourly.data);
         const hourlyData = {
             summary: {
@@ -180,51 +203,67 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 7. Fees
+        // 7. Fees - Due
         const $due = cheerio.load(due.data);
-        const dueData = { list: [], totalDue: 0 };
+        const dueList = [];
         $due('table tr').each((i, row) => {
             const cols = $due(row).find('td');
             if (cols.length >= 4) {
                 const type = $due(cols[0]).text().trim();
-                const amountText = $due(cols[3]).text().trim();
-                if (type.length > 5 && amountText.match(/[\d,]+\.\d{2}/)) {
-                    dueData.list.push({ head: $due(cols[1]).text().trim(), dueDate: $due(cols[2]).text().trim(), amount: parseFloat(amountText.replace(/,/g, '')) || 0 });
+                const amt = $due(cols[3]).text().trim();
+                // Filter actual due rows by ensuring Amount has decimal pattern
+                if (amt.match(/[\d,]+\.\d{2}/) && !type.includes('Total')) {
+                    dueList.push({
+                        head: $due(cols[1]).text().trim(),
+                        dueDate: $due(cols[2]).text().trim(),
+                        amount: parseFloat(amt.replace(/,/g, '')) || 0
+                    });
                 }
             }
         });
-        dueData.totalDue = dueData.list.reduce((acc, curr) => acc + curr.amount, 0);
+        const dueTotal = dueList.reduce((acc, curr) => acc + curr.amount, 0);
 
+        // 8. Fees - Paid
         const $paid = cheerio.load(paid.data);
-        const paidData = { history: [], totalPaid: 0 };
+        const paidHistory = [];
         $paid('table tr').each((i, row) => {
             const cols = $paid(row).find('td');
-            if(cols.length >= 4 && $paid(cols[0]).text().trim().match(/\d{2}\/\d{2}\/\d{4}/)) {
-                paidData.history.push({
-                    date: $paid(cols[0]).text().trim(),
-                    mode: $paid(cols[1]).text().trim(),
-                    number: $paid(cols[2]).text().trim(),
-                    amount: parseFloat($paid(cols[3]).text().trim().replace(/,/g, '')) || 0
-                });
+            if (cols.length >= 4) {
+                const date = $paid(cols[0]).text().trim();
+                if (date.match(/\d{2}\/\d{2}\/\d{4}/)) { // Validate date format
+                    const amtStr = $paid(cols[3]).text().trim();
+                    paidHistory.push({
+                        date: date,
+                        mode: $paid(cols[1]).text().trim(),
+                        number: $paid(cols[2]).text().trim(),
+                        amount: parseFloat(amtStr.replace(/,/g, '')) || 0
+                    });
+                }
             }
         });
-        paidData.totalPaid = paidData.history.reduce((acc, curr) => acc + curr.amount, 0);
+        const paidTotal = paidHistory.reduce((acc, curr) => acc + curr.amount, 0);
 
         res.json({
             success: true,
-            data: { profile: profileData, hourly: hourlyData, subjects: subjectsData, attendance: attendanceData, internals: internalData, exams: examData, fees: { due: dueData, paid: paidData } }
+            data: { 
+                profile: profileData, hourly: hourlyData, subjects: subjectsData, 
+                attendance: attendanceData, internals: internalData, exams: examData,
+                fees: { 
+                    due: { list: dueList, totalDue: dueTotal }, 
+                    paid: { history: paidHistory, totalPaid: paidTotal } 
+                }
+            }
         });
 
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ success: false, message: e.message });
+        console.error("SCRAPE_ERROR:", e.message);
+        const msg = e.message.includes('timeout') 
+            ? 'College server timeout (Try again)' 
+            : 'Internal connection error';
+        res.status(500).json({ success: false, message: msg, error: e.message });
     }
 });
 
-// Local Dev Helper
-const isLocal = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
-if (isLocal) {
-    app.listen(5000, () => console.log('Backend running locally on port 5000'));
-}
-
+// Vercel Serverless entry point logic
+// This effectively exports the Express app handler
 export default app;
