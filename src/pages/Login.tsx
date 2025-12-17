@@ -24,10 +24,18 @@ const handleLogin = async (e: React.FormEvent) => {
 
     try {
       // Connect to Backend
+/*
 const response = await fetch("/api/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ uid: rollNo, password: password }),
+});
+*/
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const response = await fetch(`${BACKEND_URL}/api/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ uid: rollNo, password }),
 });
 
       const result = await response.json();
