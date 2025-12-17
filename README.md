@@ -1,10 +1,3 @@
-Perfect 👍
-Below is the **exact `README.md` content** in **copy-paste ready Markdown format**.
-You can replace your current `README.md` with this **as-is**.
-
----
-
-```md
 # 🎓 Loyola Student Portal (ERP Modernization)
 
 A **next-generation College ERP dashboard** that reimagines a legacy student portal with a modern UI/UX, real ERP data scraping, mobile-first design, and production-grade deployment.
