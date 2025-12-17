@@ -1,17 +1,17 @@
-const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
-const cors = require('cors');
-const { wrapper } = require('axios-cookiejar-support');
-const { CookieJar } = require('tough-cookie');
-const qs = require('qs');
+import express from 'express';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import cors from 'cors';
+import { wrapper } from 'axios-cookiejar-support';
+import { CookieJar } from 'tough-cookie';
+import qs from 'qs';
 
 const app = express();
-const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
 
+// Base URLs
 const BASE_URL = 'http://202.160.160.58:8080/lastudentportal';
 const URLS = {
     LOGIN: `${BASE_URL}/students/loginManager/youLogin.jsp`,
@@ -25,17 +25,14 @@ const URLS = {
     FEE_PAID: `${BASE_URL}/students/report/studentFinanceDetails.jsp`
 };
 
-// --- HEALTH CHECK ROUTE ---
-// Go to your-app.vercel.app/api/hello to verify backend is running
+// Health Check
 app.get('/api/hello', (req, res) => {
-    res.json({ status: "ok", message: "Vercel API is functioning" });
+    res.json({ status: "ok", message: "Vercel API is functioning via ESM" });
 });
 
+// Main Login Route
 app.post('/api/login', async (req, res) => {
     const { uid, password } = req.body;
-    // ... (Keep your exact Login scraping logic here, NO changes needed to logic) ...
-    // COPY PASTE THE LOGIC FROM THE PREVIOUS MESSAGE INSIDE THIS BLOCK
-    // START COPY
     if (!uid || !password) return res.status(400).json({ success: false, message: 'Missing Credentials' });
 
     const jar = new CookieJar();
@@ -58,6 +55,7 @@ app.post('/api/login', async (req, res) => {
 
         console.log('[AUTH] Success. Scraping ALL modules...');
 
+        // Parallel Request
         const [hourly, profile, subjects, att, internal, exam, due, paid] = await Promise.all([
             client.get(URLS.HOURLY),
             client.get(URLS.PROFILE),
@@ -69,7 +67,7 @@ app.post('/api/login', async (req, res) => {
             client.get(URLS.FEE_PAID)
         ]);
 
-        // 1. Hourly Stats
+        // 1. Hourly
         const $h = cheerio.load(hourly.data);
         const hourlyData = {
             summary: {
@@ -182,7 +180,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
 
-        // 7. Fee Due
+        // 7. Fees
         const $due = cheerio.load(due.data);
         const dueData = { list: [], totalDue: 0 };
         $due('table tr').each((i, row) => {
@@ -191,55 +189,42 @@ app.post('/api/login', async (req, res) => {
                 const type = $due(cols[0]).text().trim();
                 const amountText = $due(cols[3]).text().trim();
                 if (type.length > 5 && amountText.match(/[\d,]+\.\d{2}/)) {
-                    dueData.list.push({
-                        head: $due(cols[1]).text().trim(),
-                        dueDate: $due(cols[2]).text().trim(),
-                        amount: parseFloat(amountText.replace(/,/g, '')) || 0
-                    });
+                    dueData.list.push({ head: $due(cols[1]).text().trim(), dueDate: $due(cols[2]).text().trim(), amount: parseFloat(amountText.replace(/,/g, '')) || 0 });
                 }
             }
         });
         dueData.totalDue = dueData.list.reduce((acc, curr) => acc + curr.amount, 0);
 
-        // 8. Fee Paid
         const $paid = cheerio.load(paid.data);
         const paidData = { history: [], totalPaid: 0 };
         $paid('table tr').each((i, row) => {
             const cols = $paid(row).find('td');
-            if (cols.length >= 4) {
-                const date = $paid(cols[0]).text().trim();
-                if (date.match(/\d{2}\/\d{2}\/\d{4}/)) {
-                    const amtStr = $paid(cols[3]).text().trim();
-                    paidData.history.push({
-                        date: date,
-                        mode: $paid(cols[1]).text().trim(),
-                        number: $paid(cols[2]).text().trim(),
-                        amount: parseFloat(amtStr.replace(/,/g, '')) || 0
-                    });
-                }
+            if(cols.length >= 4 && $paid(cols[0]).text().trim().match(/\d{2}\/\d{2}\/\d{4}/)) {
+                paidData.history.push({
+                    date: $paid(cols[0]).text().trim(),
+                    mode: $paid(cols[1]).text().trim(),
+                    number: $paid(cols[2]).text().trim(),
+                    amount: parseFloat($paid(cols[3]).text().trim().replace(/,/g, '')) || 0
+                });
             }
         });
         paidData.totalPaid = paidData.history.reduce((acc, curr) => acc + curr.amount, 0);
 
         res.json({
             success: true,
-            data: { 
-                profile: profileData, hourly: hourlyData, subjects: subjectsData, 
-                attendance: attendanceData, internals: internalData, exams: examData,
-                fees: { due: dueData, paid: paidData }
-            }
+            data: { profile: profileData, hourly: hourlyData, subjects: subjectsData, attendance: attendanceData, internals: internalData, exams: examData, fees: { due: dueData, paid: paidData } }
         });
 
     } catch (e) {
         console.error(e);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: e.message });
     }
-    // END COPY
 });
 
-// Vercel Serverless Function Handling
-if (require.main === module) {
-    app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
+// Local Dev Helper
+const isLocal = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+if (isLocal) {
+    app.listen(5000, () => console.log('Backend running locally on port 5000'));
 }
 
-module.exports = app;
+export default app;
