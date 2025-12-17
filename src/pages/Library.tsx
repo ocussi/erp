@@ -151,56 +151,6 @@ export default function Library() {
                 </div>
 
 
-                {/* --- Right Column: Physical Status (1/3 width) --- */}
-                <div className="xl:col-span-1 space-y-6">
-                    <Card className="h-full border-muted-foreground/20">
-                        <CardHeader className="bg-muted/20 pb-4">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <History className="w-5 h-5 text-muted-foreground" />
-                                Account Status
-                            </CardTitle>
-                            <CardDescription>My Borrowing History</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <ScrollArea className="h-[400px]">
-                                <div className="divide-y">
-                                    {MY_ISSUED_BOOKS.map((book, i) => (
-                                        <div key={i} className="p-4 hover:bg-muted/20 transition-colors space-y-2">
-                                            <div className="flex justify-between items-start gap-2">
-                                                <h4 className="text-sm font-semibold leading-tight">{book.title}</h4>
-                                                {book.status === 'Overdue' ? (
-                                                     <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
-                                                ) : book.status === 'Due Soon' ? (
-                                                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 text-[10px]">Due Soon</Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-[10px]">Active</Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">Author: {book.author}</p>
-                                            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground mt-2">
-                                                <Clock className="w-3.5 h-3.5" /> Due: {book.due}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {/* Mock Empty State items to fill space */}
-                                    <div className="p-6 text-center text-muted-foreground space-y-2">
-                                         <Book className="w-8 h-8 mx-auto opacity-20" />
-                                         <p className="text-xs">No returned books in history.</p>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                        <CardFooter className="bg-muted/20 border-t p-4">
-                            <Alert variant="destructive" className="bg-red-50 text-red-900 border-red-200 dark:bg-red-900/10 dark:text-red-300 dark:border-red-900 w-full py-2">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle className="text-xs font-bold">Penalty Alert</AlertTitle>
-                                <AlertDescription className="text-xs mt-0.5">
-                                    Return overdue book "Artificial Intelligence" immediately to avoid fine accumulation (₹2.00/day).
-                                </AlertDescription>
-                            </Alert>
-                        </CardFooter>
-                    </Card>
-                </div>
             </div>
         </div>
     );
