@@ -160,9 +160,12 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-/* -------------------- LOCAL + RENDER SUPPORT -------------------- */
 const PORT = process.env.PORT || 5000;
-if (!process.env.RENDER) app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
+
+if (process.env.RENDER || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅ Backend running on port ${PORT}`);
+  });
+}
 
 export default app;
-/* -------------------- EXPORT FOR RENDER -------------------- */
