@@ -7,6 +7,7 @@ import { CookieJar } from 'tough-cookie';
 import qs from 'qs';
 
 const app = express();
+// Duplicate PORT removed; using process.env.PORT || 3000 later in the file
 
 /* -------------------- MIDDLEWARE -------------------- */
 app.use(cors({ origin: '*' }));
@@ -160,7 +161,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 if (process.env.RENDER || !process.env.VERCEL) {
   app.listen(PORT, () => {
