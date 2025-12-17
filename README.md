@@ -1,81 +1,252 @@
-# Loyola Student Portal (ERP Modernization)
+Perfect 👍
+Below is the **exact `README.md` content** in **copy-paste ready Markdown format**.
+You can replace your current `README.md` with this **as-is**.
 
-A Next-Gen College ERP dashboard that reimagines the legacy student portal experience. Built with a focus on modern UI/UX, mobile responsiveness, and visual data analytics.
+---
 
-## 🚀 Features
+```md
+# 🎓 Loyola Student Portal (ERP Modernization)
 
--   **Modern Dashboard UI**: A complete overhaul of the legacy interface using a strict **Neutral/Zinc** theme and Dark Mode by default.
--   **Visual Analytics**: 
-    -   **Attendance**: Interactive Donut charts (Recharts) replacing static tables.
-    -   **Performance**: Automatic **SGPA Calculator** for semester marks.
-    -   **Finance**: Dashboard for Paid/Due fees with visual progress bars.
--   **Student Services Hub**: Unified portal for exam registrations, hall ticket downloads (with mock PDF generation), and library OPAC search.
--   **Mobile First**: Fully responsive layout with stacking cards, scrollable data tables, and a touch-friendly sidebar.
--   **PWA Support**: Installable on iOS/Android as a standalone native-like app.
--   **Smooth Animations**: System-wide page transitions using Framer Motion.
+A **next-generation College ERP dashboard** that reimagines a legacy student portal with a modern UI/UX, real ERP data scraping, mobile-first design, and production-grade deployment.
+
+This project modernizes how students view attendance, marks, fees, and services — without changing the underlying ERP system.
+
+---
+
+## ✨ Key Highlights
+
+- **Modern UI / UX**  
+  Clean, minimal **Neutral/Zinc** design system  
+  Dark Mode by default with smooth transitions
+
+- **Live ERP Integration (Backend Powered)**  
+  Secure login to the college ERP  
+  Real-time scraping of student data (attendance, marks, fees, etc.)
+
+- **Visual Data Analytics**  
+  - Attendance donut charts (subject-wise & hour-wise)  
+  - SGPA calculation from marks  
+  - Fee payment progress visualization  
+
+- **Mobile-First & PWA Ready**  
+  Fully responsive layouts  
+  Installable as a standalone app (Android / iOS)
+
+- **Smooth Animations**  
+  Page transitions and UI micro-interactions using Framer Motion
+
+---
+
+## 🧩 Modules
+
+### 👤 Student Profile
+- Academic bio
+- Personal & institutional details
+- ERP-synced profile data
+
+### 📊 Attendance
+- **Subject-wise Attendance**
+  - Safe / Detained status (75% rule)
+- **Hour-wise Attendance**
+  - Donut chart + detailed log view
+
+### 📝 Examination
+- **Internal Marks**
+  - Accordion-based breakdown
+- **External Marks**
+  - Grade & SGPA calculator
+- **Hall Ticket**
+  - Release status & preview (simulated)
+
+### 💰 Finance
+- Paid vs Due fees dashboard
+- Payment history (simulated gateway)
+
+### 📚 Library & Services
+- Library resources (IEEE, DELNET)
+- Service shortcuts & student utilities
+
+---
 
 ## 🛠️ Tech Stack
 
--   **Framework**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
--   **Language**: [TypeScript](https://www.typescriptlang.org/)
--   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
--   **Components**: [Shadcn UI](https://ui.shadcn.com/) (Radix Primitives)
--   **Charts**: [Recharts](https://recharts.org/)
--   **Animations**: [Framer Motion](https://www.framer.com/motion/)
--   **Routing**: React Router Dom v6
--   **PWA**: Vite Plugin PWA
+### Frontend
+- **Framework**: React + Vite  
+- **Language**: TypeScript  
+- **Styling**: Tailwind CSS  
+- **UI Components**: shadcn/ui (Radix UI)  
+- **Charts**: Recharts  
+- **Animations**: Framer Motion  
+- **Routing**: React Router DOM v6  
+- **PWA**: Vite Plugin PWA  
 
-## 📸 Modules
+### Backend
+- **Runtime**: Node.js  
+- **Framework**: Express  
+- **Networking**: Axios  
+- **Session Handling**: Cookie-based ERP session scraping  
+- **Deployment**: Render  
 
-1.  **Student Profile**: Edit contact details, change password (Simulated), and view academic bio.
-2.  **Attendance**:
-    -   *Subject-wise*: Safe/Detained alerts based on 75% criteria.
-    -   *Hour-wise*: Detailed log view with Donut chart visualization.
-3.  **Examination**:
-    -   *Internals*: Accordion view for detailed component weighting.
-    -   *External Marks*: Grade & SGPA calculation engine.
-    -   *Hall Ticket*: Release status indicator and preview modal.
-4.  **Finance**: Payment gateway simulation and receipt history.
-5.  **Library**: Digital resource links (IEEE, DELNET) and overdue book alerts.
+---
 
-## 🏃‍♂️ Getting Started
+## 🗂️ Project Structure
 
-### Prerequisites
--   Node.js (v18 or higher)
+```
 
-### Installation
+erp/
+├── api/                # Backend (Express + ERP scraping)
+│   └── index.js
+│
+├── src/                # Frontend (React + Vite)
+│   ├── pages/
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   └── assets/
+│
+├── dist/               # Production frontend build
+├── public/
+├── vercel.json         # Frontend deployment config
+├── vite.config.ts
+└── package.json
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/revanthlol/erp.git
-    cd erp
-    ```
+````
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+---
 
-3.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
+## 🚀 Local Development
 
-4.  Open `http://localhost:5173` in your browser.
+### 1️⃣ Clone Repository
+```bash
+git clone https://github.com/revanthlol/erp.git
+cd erp
+````
 
-## 🔐 Authentication (Mock)
+---
 
-Since this is a frontend-only showcase:
--   **Username**: Any value (e.g., `111724013034`)
--   **Password**: Any value (e.g., `password`)
+### 2️⃣ Start Backend (ERP API)
 
-## 📱 Mobile & PWA
+```bash
+cd api
+npm install
+npm start
+```
 
-To test the mobile install feature:
-1.  Deploy to Vercel/Netlify (Requires HTTPS).
-2.  Open the site on a mobile device.
-3.  Use **"Add to Home Screen"** to install as a standalone app.
+Backend runs at:
+
+```
+http://localhost:5000
+```
+
+---
+
+### 3️⃣ Start Frontend
+
+```bash
+cd ..
+npm install
+npm run dev
+```
+
+Frontend runs at:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 🔐 Authentication
+
+> ⚠️ **For educational/demo purposes only**
+
+* Uses **real ERP login credentials**
+* Credentials are sent securely to the backend
+* Backend maintains session cookies to scrape ERP data
+* No credentials are stored permanently
+
+---
+
+## 🌍 Deployment
+
+### Backend (Render)
+
+* **Service Type**: Web Service
+* **Root Directory**: `/api`
+* **Build Command**:
+
+  ```bash
+  npm install
+  ```
+* **Start Command**:
+
+  ```bash
+  npm start
+  ```
+
+**Live Backend URL**
+
+```
+https://erp-wksy.onrender.com
+```
+
+---
+
+### Frontend (Vercel)
+
+* **Framework**: Vite
+* **Build Command**:
+
+  ```bash
+  npm run build
+  ```
+* **Output Directory**:
+
+  ```
+  dist
+  ```
+* **Environment Variable**:
+
+  ```
+  VITE_BACKEND_URL=https://erp-wksy.onrender.com
+  ```
+
+---
+
+## 📱 PWA Support
+
+* Installable on Android, iOS, and Desktop
+* Offline shell support
+* Native-like experience via browser install
+
+---
+
+## ⚠️ Disclaimer
+
+This project is intended for:
+
+* Educational use
+* UI/UX experimentation
+* ERP modernization concepts
+
+It is **not officially affiliated** with Loyola Academy or its ERP system.
+
+---
 
 ## 📄 License
 
-This project is for educational and UI prototyping purposes.
+MIT License
+Free to use for learning, experimentation, and UI prototyping.
+
+```
+
+---
+
+If you want, next I can:
+- Add **API endpoint documentation**
+- Write a **DEPLOYMENT.md**
+- Clean commits + tags for a **portfolio-ready repo**
+- Convert this into a **case study README**
+
+You actually built something solid here 👏
+```
