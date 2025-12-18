@@ -7,7 +7,6 @@ import { CookieJar } from 'tough-cookie';
 import qs from 'qs';
 
 const app = express();
-// Duplicate PORT removed; using process.env.PORT || 3000 later in the file
 
 /* -------------------- MIDDLEWARE -------------------- */
 app.use(cors({ origin: '*' }));
@@ -105,7 +104,13 @@ app.post('/api/login', async (req, res) => {
       else if(key.includes('father')) profileData.father = val;
       else if(key.includes('contact') && key.includes('student')) profileData.contact = val;
       else if(key.includes('residential')) profileData.address = val;
+      else if (key.includes('district')) {  // ← NEW: Parse District / State Name
+        const parts = val.split('/').map(s => s.trim());
+        profileData.district = parts[0] || '';
+        profileData.state = parts[1] || '';
+      }
     });
+    console.log('[PROFILE] Parsed:', profileData);  // ← TEMP: Log to verify (remove later)
 
     const $s = cheerio.load(subjects.data);
     const subjectsData = [];

@@ -39,7 +39,7 @@ export default function StudentProfile() {
     nationality: "",
     hosteller: "No",
     income: "",
-    state: ""
+    state: ""  // ← Already here, but now populated
   });
 
   const [editForm, setEditForm] = useState(student);
@@ -59,13 +59,14 @@ export default function StudentProfile() {
               institution: parsed.institution || prev.institution,
               father: parsed.father || prev.father,
               address: parsed.address || prev.address,
+              state: parsed.state || prev.state,  // ← NEW: Hydrate state
               // Simple parsing for merged fields if they exist
               contact: parsed.contact ? parsed.contact.split('/')[0].trim() : prev.contact,
               email: parsed.contact && parsed.contact.includes('/') ? parsed.contact.split('/')[1].trim() : prev.email
           }));
           
           // Update edit form to match
-          setEditForm(prev => ({ ...prev, ...parsed }));
+          setEditForm(prev => ({ ...prev, ...parsed, state: parsed.state }));  // ← NEW: Include state in edit form
       }
   }, []);
 
@@ -75,6 +76,13 @@ export default function StudentProfile() {
           setStudent(editForm);
           setLoading(false);
       }, 1000);
+  };
+
+  // Dynamic initials from name (bonus)
+  const getInitials = (name: string) => {
+    if (!name || name === "Loading...") return "LA";
+    const words = name.split(' ').filter(w => w.length > 0);
+    return words.slice(-2).map(w => w[0].toUpperCase()).join('');
   };
 
   return (
@@ -131,6 +139,14 @@ export default function StudentProfile() {
                                 onChange={(e) => setEditForm({...editForm, address: e.target.value})}
                             />
                         </div>
+                        <div className="space-y-2">  {/* ← NEW: Add state edit field if needed */}
+                            <Label htmlFor="state">State</Label>
+                            <Input 
+                                id="state"
+                                value={editForm.state}
+                                onChange={(e) => setEditForm({...editForm, state: e.target.value})}
+                            />
+                        </div>
                     </TabsContent>
                     
                     <TabsContent value="security" className="space-y-4 py-4">
@@ -166,17 +182,19 @@ export default function StudentProfile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <DetailItem label="Father Name" value={student.father} full />
              <DetailItem label="Residential Address" value={student.address} full />
+             <DetailItem label="State" value={student.state} />  {/* ← NEW: Display state */}
              <DetailItem label="Contact Details" value={`${student.contact} / ${student.email}`} full />
           </div>
         </CardContent>
       </Card>
- {/* Profile Photo & Status Card */}
+ 
+      {/* Profile Photo & Status Card */}
       <div className="space-y-6">
         <Card className="shadow-sm overflow-hidden border-2 border-primary/5">
             <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-8 flex justify-center items-center relative">
                  <Avatar className="w-48 h-48 border-4 border-white shadow-xl">
                     <AvatarImage src="../public/logo.png" /> 
-                    <AvatarFallback className="text-4xl">RG</AvatarFallback>
+                    <AvatarFallback className="text-4xl">{getInitials(student.name)}</AvatarFallback>  {/* ← NEW: Dynamic initials */}
                 </Avatar>
                 <div className="absolute top-4 right-4 sm:hidden">
                     {/* Mobile Setting Trigger (icon only) if screen is small */}
@@ -213,6 +231,7 @@ export default function StudentProfile() {
     </div>
   );
 }
+
 const DetailItem = ({ label, value, full }: { label: string, value: string, full?: boolean }) => (
   <div className={full ? "col-span-1 sm:col-span-2" : "col-span-1"}>
     <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-bold mb-1">{label}</h4>
